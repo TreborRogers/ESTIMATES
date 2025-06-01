@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Estimate Calculator</title>
+  <meta charset="UTF-8">
+</head>
+<body>
+<h1>Estimate Calculator</h1>
+<label for="serviceType">Select Service:</label>
+<select id="serviceType" onchange="toggleServiceSection()">
+  <option value="">--Select--</option>
+  <option value="HVAC">HVAC Cleaning</option>
+  <option value="BIO">Biohazard Cleanup</option>
+  <option value="Carpet">Carpet Cleaning</option>
+  <option value="Odor">Odor Control</option>
+</select>
+
+<!-- Service sections dynamically shown -->
+<div id="HVAC" class="serviceSection" style="display:none">
+  Registers: <input id="hvacRegisters" type="number"><br>
+  Returns: <input id="hvacReturns" type="number"><br>
+  Plastic Protection (sq ft): <input id="hvacPlasticSF" type="number"><br>
+  <select id="hvacManualInput" onchange="toggleManualHVACInput()">
+    <option value="auto">Auto</option>
+    <option value="manual">Manual Input</option>
+  </select><br>
+  <div id="hvacManualFields" style="display:none">
+    Labor Hours: <input id="hvacHours" type="number"><br>
+    Technicians: <input id="hvacTechs" type="number"><br>
+  </div>
+</div>
+
+<div id="BIO" class="serviceSection" style="display:none">
+  PPE Sets: <input id="bioPPE" type="number"><br>
+  Disposal Truckloads: <input id="bioTrucks" type="number"><br>
+  Cleaning Area (sq ft): <input id="bioSF" type="number"><br>
+  Labor Hours: <input id="bioHours" type="number"><br>
+  Technicians: <input id="bioTechs" type="number"><br>
+  Is Demolition Needed? <input type="checkbox" id="bioDemoNeeded" onchange="document.getElementById('bioDemoFields').style.display = this.checked ? 'block' : 'none';"><br>
+  <div id="bioDemoFields" style="display:none">
+    Baseboard (lf): <input id="bioBaseLF" type="number"><br>
+    Drywall (sf): <input id="bioDrywallSF" type="number"><br>
+    Carpet & Pad (sf): <input id="bioCarpetSF" type="number"><br>
+    Floating Floor (sf): <input id="bioFloatSF" type="number"><br>
+    Hardwood (sf): <input id="bioHardwoodSF" type="number"><br>
+  </div>
+</div>
+
+<div id="Carpet" class="serviceSection" style="display:none">
+  Calculation Type:
+  <select id="carpetCalcType" onchange="toggleCarpetInputs()">
+    <option value="room">By Room</option>
+    <option value="squarefoot">By Square Foot</option>
+    <option value="minimum">Minimum</option>
+  </select><br>
+  <div id="carpetRoomFields">
+    Rooms: <input id="carpetRooms" type="number"><br>
+  </div>
+  <div id="carpetSqFtFields" style="display:none">
+    Square Footage: <input id="carpetSF" type="number"><br>
+    Heavily Soiled? <input type="checkbox" id="carpetHeavily"><br>
+  </div>
+</div>
+
+<div id="Odor" class="serviceSection" style="display:none">
+  Ozone Calculation:
+  <select id="odorOzoneType" onchange="toggleOzoneFields()">
+    <option value="room">By Room</option>
+    <option value="cf">By Cubic Feet</option>
+  </select><br>
+  <div id="ozoneRoomFields">
+    Rooms: <input id="ozoneRoomCount" type="number"><br>
+  </div>
+  <div id="ozoneCFFields" style="display:none">
+    Cubic Feet: <input id="ozoneCFVal" type="number"><br>
+  </div>
+  Clean Materials (sq ft): <input id="odorCleanSF" type="number"><br>
+  Labor Hours: <input id="odorHours" type="number"><br>
+  Technicians: <input id="odorTechs" type="number"><br>
+  Containment Needed? <input type="checkbox" id="odorContain"><br>
+</div>
+
+<button id="calculateBtn" onclick="calculateEstimate()">Calculate Estimate</button>
+<div id="estimateOutput" style="margin-top: 20px; font-weight: bold;"></div>
+<div id="scopeOutput" style="margin-top: 20px; font-weight: bold;"></div>
+
+<script>
+function toggleServiceSection() {
+  const serviceType = document.getElementById("serviceType").value;
+  const sections = document.querySelectorAll(".serviceSection");
+  sections.forEach(section => section.style.display = "none");
+  if (serviceType) {
+    const section = document.getElementById(serviceType);
+    if (section) section.style.display = "block";
+  }
+}
+function toggleManualHVACInput() {
+  const isManual = document.getElementById("hvacManualInput").value === "manual";
+  document.getElementById("hvacManualFields").style.display = isManual ? "block" : "none";
+}
+function toggleCarpetInputs() {
+  const calcType = document.getElementById("carpetCalcType").value;
+  document.getElementById("carpetRoomFields").style.display = calcType === "room" ? "block" : "none";
+  document.getElementById("carpetSqFtFields").style.display = calcType === "squarefoot" ? "block" : "none";
+}
+function toggleOzoneFields() {
+  const ozoneType = document.getElementById("odorOzoneType").value;
+  document.getElementById("ozoneRoomFields").style.display = ozoneType === "room" ? "block" : "none";
+  document.getElementById("ozoneCFFields").style.display = ozoneType === "cf" ? "block" : "none";
+}
+
+function calculateEstimate() {
+  const type = document.getElementById("serviceType").value;
+  let estimate = 0;
+  let scope = "<strong>Scope of Work:</strong><ul>";
+
+  if (type === "HVAC") {
+    const reg = +document.getElementById("hvacRegisters").value || 0;
+    const ret = +document.getElementById("hvacReturns").value || 0;
+    const sf = +document.getElementById("hvacPlasticSF").value || 0;
+    const isManual = document.getElementById("hvacManualInput").value === "manual";
+    let hours = 0, techs = 2;
+    if (isManual) {
+      hours = +document.getElementById("hvacHours").value || 0;
+      techs = +document.getElementById("hvacTechs").value || 0;
+    } else {
+      if ((reg + ret) <= 15) hours = 4;
+      else hours = 8;
+    }
+    estimate += reg * (40.67 + 9.84 + 8.29);
+    estimate += ret * (40.67 + 13.24 + 8.29);
+    estimate += sf * 0.26;
+    estimate += hours * techs * 61.93;
+    estimate *= 1.0825;
+
+    scope += `<li>Cleaning of ${reg + ret} HVAC covers</li>`;
+    scope += `<li>Detaching of ${reg + ret} HVAC covers</li>`;
+    scope += `<li>Plastic protection for ${sf} sq ft</li>`;
+    scope += `<li>${techs} technicians for ${hours} hours</li>`;
+  }
+
+  if (type === "BIO") {
+    const ppe = +document.getElementById("bioPPE").value || 0;
+    const trucks = +document.getElementById("bioTrucks").value || 0;
+    const sf = +document.getElementById("bioSF").value || 0;
+    const hours = +document.getElementById("bioHours").value || 0;
+    const techs = +document.getElementById("bioTechs").value || 0;
+    const demo = document.getElementById("bioDemoNeeded").checked;
+    const base = +document.getElementById("bioBaseLF").value || 0;
+    const dry = +document.getElementById("bioDrywallSF").value || 0;
+    const carpet = +document.getElementById("bioCarpetSF").value || 0;
+    const float = +document.getElementById("bioFloatSF").value || 0;
+    const hardwood = +document.getElementById("bioHardwoodSF").value || 0;
+
+    estimate += ppe * 13.87 + trucks * 171.54 + sf * 0.68 + hours * techs * 79;
+    if (demo) {
+      estimate += base * 1.2 + dry * 1.25 + carpet * 1.5 + float * 4 + hardwood * 7.6;
+    }
+    estimate *= 1.0825;
+
+    if (ppe) scope += `<li>${ppe} PPE sets used</li>`;
+    if (trucks) scope += `<li>${trucks} truckloads for disposal</li>`;
+    if (sf) scope += `<li>Cleaning of ${sf} sq ft of affected area</li>`;
+    if (hours || techs) scope += `<li>${techs} technicians for ${hours} hours</li>`;
+    if (demo && (base || dry || carpet || float || hardwood)) {
+      scope += `<li>Demolition required, including:</li><ul>`;
+      if (base) scope += `<li>Removal of Baseboard: ${base} lf</li>`;
+      if (dry) scope += `<li>Removal of Drywall: ${dry} sf</li>`;
+      if (carpet) scope += `<li>Removal of Carpet & Pad: ${carpet} sf</li>`;
+      if (float) scope += `<li>Removal of Floating Floor: ${float} sf</li>`;
+      if (hardwood) scope += `<li>Removal of Hardwood: ${hardwood} sf</li>`;
+      scope += `</ul>`;
+    }
+  }
+
+  if (type === "Carpet") {
+    const calcType = document.getElementById("carpetCalcType").value;
+    if (calcType === "minimum") {
+      estimate = 250 * 1.0825;
+      scope += `<li>Minimum carpet cleaning charge applied</li>`;
+    } else if (calcType === "room") {
+      const rooms = +document.getElementById("carpetRooms").value || 0;
+      const laborHours = rooms > 3 ? 4 : 2;
+      estimate += rooms * 64 + laborHours * 1 * 61.93;
+      estimate *= 1.0825;
+      scope += `<li>${rooms} rooms cleaned</li>`;
+      scope += `<li>1 technician for ${laborHours} hours</li>`;
+    } else if (calcType === "squarefoot") {
+      const sf = +document.getElementById("carpetSF").value || 0;
+      const heavily = document.getElementById("carpetHeavily").checked;
+      let hours = 0;
+      if (sf <= 100) hours = 1.5;
+      else if (sf <= 300) hours = 2;
+      else if (sf <= 600) hours = 3;
+      else hours = 5;
+      if (heavily) hours += 1;
+      estimate += sf * 0.64 + hours * 61.93;
+      estimate *= 1.0825;
+      scope += `<li>Cleaning of ${sf} sq ft of carpet</li>`;
+      scope += `<li>1 technician for ${hours} hours</li>`;
+    }
+  }
+
+  if (type === "Odor") {
+    const ozoneType = document.getElementById("odorOzoneType").value;
+    const rooms = +document.getElementById("ozoneRoomCount").value || 0;
+    const cf = +document.getElementById("ozoneCFVal").value || 0;
+    const cleanSF = +document.getElementById("odorCleanSF").value || 0;
+    const hours = +document.getElementById("odorHours").value || 0;
+    const techs = +document.getElementById("odorTechs").value || 0;
+    const contain = document.getElementById("odorContain").checked;
+
+    if (ozoneType === "room") estimate += rooms * 80;
+    else estimate += cf * 0.08;
+
+    estimate += cleanSF * 0.52 + hours * techs * 61.93;
+    if (contain) estimate += 100;
+    estimate *= 1.0825;
+
+    if (ozoneType === "room" && rooms) scope += `<li>Ozone treatment in ${rooms} rooms</li>`;
+    if (ozoneType === "cf" && cf) scope += `<li>Ozone treatment of ${cf} cubic feet</li>`;
+    if (cleanSF) scope += `<li>Cleaning of ${cleanSF} sq ft of affected materials</li>`;
+    if (techs || hours) scope += `<li>${techs} technicians for ${hours} hours</li>`;
+    if (contain) scope += `<li>Containment setup performed</li>`;
+  }
+
+  scope += "</ul>";
+  document.getElementById("estimateOutput").innerHTML = `Total Estimate: $${estimate.toFixed(2)}`;
+  document.getElementById("scopeOutput").innerHTML = scope;
+}
+</script>
+</body>
+</html>
